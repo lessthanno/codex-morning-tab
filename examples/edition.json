@@ -1,0 +1,65 @@
+{
+  "title": "A quieter corner of the internet",
+  "subtitle": "An open-source reading edition",
+  "editorNote": "This public example brings together the project that inspired Morning Tab and the official building blocks used to make it a native plugin. It is a product reading list, not a claim about today's breaking news.",
+  "stories": [
+    {
+      "title": "What if your new tab read the internet for you?",
+      "summary": "AI Homepage explores a personal front page assembled from browsing activity. Its newspaper-style illustration suggests a calmer way to return to the stories you follow: an edited page with a lead, briefings, and real source links.",
+      "url": "https://github.com/ThariqS/ai-newtab",
+      "source": "ThariqS · GitHub",
+      "readFrom": "https://github.com/ThariqS/ai-newtab",
+      "section": "The idea",
+      "publishedAt": null
+    },
+    {
+      "title": "A newspaper that belongs inside the conversation",
+      "summary": "OpenAI MCP Extensions defines sidebar apps, conversation panels, and native plugin settings. These are the integration points used by Morning Tab's local MCP server.",
+      "url": "https://developers.openai.com/plugins/build/extensions",
+      "source": "OpenAI Developers",
+      "readFrom": "https://developers.openai.com/plugins/build/extensions",
+      "section": "Inside the app",
+      "publishedAt": null
+    },
+    {
+      "title": "Skills give the tools an editorial workflow",
+      "summary": "A plugin can bundle skills with its MCP server. Morning Tab uses a skill to guide source reading and attribution, then saves the finished edition through a local tool.",
+      "url": "https://developers.openai.com/plugins/build/plugins",
+      "source": "OpenAI Developers",
+      "readFrom": "https://developers.openai.com/plugins/build/plugins",
+      "section": "How it works",
+      "publishedAt": null
+    },
+    {
+      "title": "The interface starts with a small set of extension APIs",
+      "summary": "The official TypeScript SDK provides server and app APIs for MCP Extensions. Hosts advertise which optional features they support, so an app can explain when a feature is unavailable.",
+      "url": "https://github.com/openai/mcp-extensions/tree/main/typescript",
+      "source": "OpenAI · GitHub",
+      "readFrom": "https://github.com/openai/mcp-extensions/tree/main/typescript",
+      "section": "The building blocks",
+      "publishedAt": null
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://github.com/ThariqS/ai-newtab",
+      "status": "read",
+      "reason": ""
+    },
+    {
+      "url": "https://developers.openai.com/plugins/build/extensions",
+      "status": "read",
+      "reason": ""
+    },
+    {
+      "url": "https://developers.openai.com/plugins/build/plugins",
+      "status": "read",
+      "reason": ""
+    },
+    {
+      "url": "https://github.com/openai/mcp-extensions/tree/main/typescript",
+      "status": "read",
+      "reason": ""
+    }
+  ]
+}

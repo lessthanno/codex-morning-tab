@@ -1,0 +1,12 @@
+{
+  "name": "morning-tab-plugins",
+  "interface": { "displayName": "Morning Tab" },
+  "plugins": [
+    {
+      "name": "morning-tab",
+      "source": { "source": "local", "path": "./plugins/morning-tab" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

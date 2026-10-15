@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "morning-tab": {
+      "command": "node",
+      "args": ["./dist/server.mjs"],
+      "cwd": "./"
+    }
+  }
+}

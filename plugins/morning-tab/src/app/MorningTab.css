@@ -1,0 +1,146 @@
+@import "../newspaper/Newspaper.css";
+.app-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--line);
+  font:
+    0.75rem system-ui,
+    sans-serif;
+  background: var(--paper);
+}
+.toolbar-actions {
+  display: flex;
+  gap: 9px;
+  flex-shrink: 0;
+}
+.app-toolbar button,
+.preferences button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid #a69f8d;
+  background: transparent;
+  color: var(--ink);
+  padding: 8px 13px;
+  border-radius: 5px;
+}
+.app-toolbar .primary,
+.preferences .primary {
+  background: #31342a;
+  color: #fffdf5;
+  border-color: #31342a;
+}
+.app-toolbar button:disabled,
+.preferences button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.app-status {
+  font:
+    0.75rem/1.65 system-ui,
+    sans-serif;
+  padding: 0 24px;
+  color: var(--muted);
+  margin: 0;
+  min-height: 0;
+}
+.app-status:not(:empty) {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.app-status.error {
+  color: #9a3a2b;
+  background: #fff1e4;
+}
+.preferences {
+  font:
+    0.875rem/1.65 system-ui,
+    sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 28px;
+  width: min(620px, calc(100% - 30px));
+  max-height: 90vh;
+  overflow: auto;
+}
+.preferences::backdrop {
+  background: #26271d88;
+}
+.preferences h2 {
+  font-size: 1.65rem;
+  margin-top: 0;
+}
+.preferences p {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.preferences label {
+  display: block;
+  margin-top: 16px;
+}
+.preferences input,
+.preferences textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  background: #fcfaf4;
+  border: 1px solid #b9b19e;
+  color: #292a24;
+  font: inherit;
+}
+.preferences textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+.preference-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.preference-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+.preferences :focus-visible,
+.app-toolbar :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.app-label {
+  overflow-wrap: anywhere;
+}
+.loading {
+  margin: 12vh auto;
+  text-align: center;
+  font: 1rem system-ui;
+  color: var(--muted);
+}
+@media (max-width: 600px) {
+  .app-toolbar {
+    padding: 10px 14px;
+    flex-wrap: wrap;
+  }
+  .toolbar-actions {
+    flex-wrap: wrap;
+  }
+  .app-label {
+    font-size: 0.65rem;
+  }
+  .preference-row {
+    grid-template-columns: 1fr;
+  }
+  .preferences {
+    padding: 20px;
+  }
+  .app-status {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
