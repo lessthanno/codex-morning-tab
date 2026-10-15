@@ -102,21 +102,3 @@ The current release has not been verified as installed and rendered in every sup
 Inspired by [ThariqS/ai-newtab](https://github.com/ThariqS/ai-newtab) and its personal-newspaper idea. This is an independent MCP Extensions implementation, not a fork of its Anthropic agent architecture. Built with the official [OpenAI MCP Extensions SDK](https://github.com/openai/mcp-extensions) and MCP SDKs.
 
 MIT for this project's source. Bundled dependencies retain their own licenses; see `plugins/morning-tab/dist/THIRD-PARTY-LICENSES.txt`. This community project is not affiliated with or endorsed by OpenAI.
-
----
-
-## 中文说明
-
-**把你关注的网站，编成一份可以在 ChatGPT / Codex 内阅读的晨报。**
-
-这是按照你提供的 [OpenAI MCP Extensions](https://developers.openai.com/plugins/build/extensions) 机制实现的原生插件：声明全局侧栏入口、对话侧面板入口和原生插件设置。配色与排版借鉴纸质晨报，保留真实来源链接。
-
-安装命令见上方。安装并重新打开会话后，可以说：
-
-> 帮我设置 Morning Tab，关注开源和 AI 工程，用中文整理这些公开网站：……
-
-之后直接说“更新我的晨报”，或者在插件内点击更新。当前会话负责读取来源和整理内容，本地 MCP 服务负责保存和展示。无需额外模型 API Key，消耗现有会话的可用额度；不会自动创建周期任务。
-
-默认只读取你选择的公开网站。插件不自带浏览历史读取功能；如要参考近期浏览，需要另外可用的浏览器工具和你的授权。读取的网页文字会进入当前 Codex / ChatGPT 对话。个人晨报保存在本机，不随开源仓库发布。
-
-已验证构建、真实 MCP 协议、保存与重新读取，以及浏览器测试宿主中的交互和排版。截图是公开样例。你当前客户端里的真实安装、原生入口展示与完整网页生成链路仍需要安装后核验；GitHub 开源不等于已通过官方插件目录审核。
