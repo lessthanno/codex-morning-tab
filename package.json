@@ -1,6 +1,6 @@
 {
   "name": "codex-morning-tab",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "A personal newspaper built with OpenAI MCP Extensions.",
@@ -13,9 +13,13 @@
     "test": "node --test test/*.test.mjs",
     "check": "npm run build && npm test",
     "start": "node plugins/morning-tab/dist/server.mjs",
-    "preview": "node scripts/preview.mjs"
+    "preview": "node scripts/preview.mjs",
+    "service:install": "npm run build && node scripts/service.mjs install",
+    "service:status": "node scripts/service.mjs status",
+    "service:restart": "node scripts/service.mjs restart"
   },
   "dependencies": {
+    "@hono/node-server": "2.1.5",
     "@modelcontextprotocol/ext-apps": "1.7.5",
     "@modelcontextprotocol/sdk": "1.32.1",
     "@modelcontextprotocol/server": "2.3.1",

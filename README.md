@@ -14,6 +14,7 @@ The screenshot is a public example in a standalone browser preview. It contains 
 - Exposes **native plugin settings** for sources, exclusions, language, timezone, interests, and newspaper title.
 - Sends a user-initiated **Update newspaper** request to the active conversation through MCP Apps / OpenAI Extensions messaging.
 - Stores source-backed editions locally and keeps the previous edition when validation or generation fails.
+- Updates an already-open newspaper in place when you edit through conversation. Saving does not open another tab or panel; opening a view is an explicit action.
 - Renders a responsive paper-and-serif newspaper with source links and explicit read failures.
 
 Your current Codex/ChatGPT conversation does the reading and editing using its available web/browser tools. The MCP server stores and presents the result. There is **no separate model API key, nested Codex process, browser extension, or autonomous schedule**. Work uses your current session and its limits.
@@ -65,13 +66,38 @@ Alternatively configure the bundled stdio MCP server in an MCP client:
 
 The adjacent `dist/app.html` file must stay beside `server.mjs`. This is a desktop/local-server distribution; it is not a hosted HTTPS connector or an approved listing in the public plugin directory.
 
+### Optional macOS background service
+
+For a persistent local service that starts at login and restarts after an unexpected exit, run these commands from this repository:
+
+```sh
+npm ci
+npm run check
+npm run service:install
+```
+
+The installer keeps the `morning-tab@morning-tab-plugins` identity. It installs a self-contained HTTP server and a generated local marketplace under `~/Library/Application Support/MorningTab/`, then uses the supported Codex CLI to install that package. Upgrades preserve the existing service's Node executable without relying on the GUI app's PATH; set `MORNING_TAB_NODE` to select another executable explicitly. The installer backs up the previous installation, restores the old service if startup fails, and removes only a duplicate manual MCP connection pointing at this exact endpoint. Personal editions stay in their original data directory. Installed cache files need no manual edits.
+
+The service listens only on `127.0.0.1:47855`. Its MCP endpoint is `/mcp`; `/health` reports the service version and saved revision, rather than rendering a newspaper. Check or restart it with:
+
+```sh
+npm run service:status
+npm run service:restart
+```
+
+After a plugin upgrade, reopen the newspaper once to load the new app JavaScript. Ordinary edition edits continue to update that existing view. Selecting **Update newspaper** still requests reading and generation in your current conversation. The service does not generate on a schedule or run another model process.
+
+Version 0.1.2 retries a failed first state read and clears connection errors after recovery, while keeping the existing edition readable and preserving a pending refresh notice.
+
 ## How an edition is prepared
 
 The conversation reads `morning_tab_read_plan`, checks candidate URLs, reads up to eight chosen public sources with available tools, and saves a concise edition through `morning_tab_publish_edition`. Each story cites a successfully read source; the first story is the lead. Unknown publication dates remain unknown. Preferences and revisions are checked again before saving, so an outdated refresh cannot overwrite a newer edition.
 
 See the [tool data contract](plugins/morning-tab/references/data-contract.md) and the [editorial skill](plugins/morning-tab/skills/morning-tab/SKILL.md). URL/provenance validation checks structure and exclusions; factual summaries and actually observed destination links remain the responsibility of the authoring conversation.
 
-The update button requests work in the current conversation. It does not run a separate model in the background. The app polls for the saved result for up to ten minutes after that explicit request, while keeping the previous edition readable.
+An open newspaper checks saved revisions while visible, so ordinary conversation edits appear in that same view. Unchanged checks preserve the existing page DOM. Hidden views pause these checks and catch up when shown again.
+
+The update button requests work in the current conversation. It does not run a separate model in the background. The app keeps the previous edition readable while waiting for the saved result. After ten minutes without a new edition it reports that status; the view can still synchronize later.
 
 ## Local data and privacy
 

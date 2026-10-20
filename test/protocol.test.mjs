@@ -32,10 +32,26 @@ test("built distribution negotiates MCP, declares native entrypoints/settings an
     const tools = await client.listTools();
     const open = tools.tools.find((t) => t.name === "morning_tab_open");
     assert.ok(open);
-    assert.deepEqual(open._meta["openai/ui"].entrypoints, [
-      { type: "global" },
+    assert.deepEqual(open._meta["openai/ui"].entrypoints, [{ type: "global" }]);
+    const panel = tools.tools.find((t) => t.name === "morning_tab_open_panel");
+    assert.deepEqual(panel._meta["openai/ui"].entrypoints, [
       { type: "thread" },
     ]);
+    for (const name of [
+      "morning_tab_publish_edition",
+      "morning_tab_get_state",
+      "morning_tab_read_plan",
+      "morning_tab_update_preferences",
+    ]) {
+      const tool = tools.tools.find((t) => t.name === name);
+      assert.ok(tool, `${name} is registered`);
+      assert.equal(
+        tool._meta?.ui?.resourceUri,
+        undefined,
+        `${name} must not open a view`,
+      );
+      assert.equal(tool._meta?.["openai/outputTemplate"], undefined);
+    }
     const caps = client.getServerCapabilities();
     const settingCap =
       caps.extensions?.["openai/settings"] ||
@@ -71,6 +87,25 @@ test("built distribution negotiates MCP, declares native entrypoints/settings an
       reopened.structuredContent.edition.id,
       saved.structuredContent.edition.id,
     );
+    // Multiple typed conversation edits use only data tools. One already-open view reads each revision.
+    let revision = saved.structuredContent.revision;
+    for (const title of ["A shorter lead", "A second conversation edit"]) {
+      const edited = structuredClone(demo);
+      edited.stories[0].title = title;
+      const editedResult = await client.callTool({
+        name: "morning_tab_publish_edition",
+        arguments: { edition: edited, expectedRevision: revision },
+      });
+      assert.ok(!editedResult.isError, JSON.stringify(editedResult));
+      revision = editedResult.structuredContent.revision;
+      const viewState = await client.callTool({
+        name: "morning_tab_get_state",
+        arguments: {},
+      });
+      assert.equal(viewState.structuredContent.edition.stories[0].title, title);
+      assert.equal(viewState.structuredContent.revision, revision);
+      assert.equal(editedResult._meta?.ui?.resourceUri, undefined);
+    }
     const resource = await client.readResource({
       uri: open._meta.ui.resourceUri,
     });

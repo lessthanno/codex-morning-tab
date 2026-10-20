@@ -28,6 +28,17 @@ await build({
     js: "import {createRequire as __createRequire} from 'node:module'; const require=__createRequire(import.meta.url);",
   },
 });
+await build({
+  entryPoints: ["plugins/morning-tab/src/server/http.mjs"],
+  bundle: true,
+  platform: "node",
+  format: "esm",
+  outfile: `${dir}/service.mjs`,
+  minify: true,
+  banner: {
+    js: "import {createRequire as __createRequire} from 'node:module'; const require=__createRequire(import.meta.url);",
+  },
+});
 console.log("Built self-contained local MCP server and app UI.");
 // Carry the licenses of bundled runtime dependencies with the prebuilt distribution.
 const lock = JSON.parse(await readFile("package-lock.json", "utf8"));

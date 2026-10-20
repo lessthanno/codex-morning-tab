@@ -7,7 +7,7 @@ import {
   lines,
   safeUrl,
 } from "../newspaper/contracts.mjs";
-export const APP_URI = "ui://morning-tab/newspaper-v1";
+export const APP_URI = "ui://morning-tab/newspaper-v3";
 const readOnly = {
   readOnlyHint: true,
   destructiveHint: false,
@@ -26,7 +26,7 @@ export function createMorningTabServer({ store, html }) {
   const server = new McpServer({
     name: "morning-tab",
     title: "Morning Tab",
-    version: "0.1.0",
+    version: "0.1.2",
   });
   server.registerResource(
     "morning-tab-ui",
@@ -54,17 +54,44 @@ export function createMorningTabServer({ store, html }) {
   );
   const viewMeta = {
     ui: { resourceUri: APP_URI },
-    "openai/ui": { entrypoints: [{ type: "global" }, { type: "thread" }] },
+    "openai/ui": { entrypoints: [{ type: "global" }] },
   };
   server.registerTool(
     "morning_tab_open",
     {
       title: "Morning Tab",
       description:
-        "Open your personal newspaper in the sidebar or beside this conversation.",
+        "Open the newspaper only when the user explicitly asks to open or show it. Do not call after editing, saving, refreshing or publishing: existing views update automatically.",
       inputSchema: z.object({}),
       annotations: readOnly,
       _meta: viewMeta,
+    },
+    async () => result(await store.read()),
+  );
+  server.registerTool(
+    "morning_tab_open_panel",
+    {
+      title: "Newspaper beside this chat",
+      description:
+        "Open a newspaper panel only when explicitly requested by the user. Never open a new panel as part of editing, refreshing or saving an edition.",
+      inputSchema: z.object({}),
+      annotations: readOnly,
+      _meta: {
+        ui: { resourceUri: APP_URI },
+        "openai/ui": { entrypoints: [{ type: "thread" }] },
+      },
+    },
+    async () => result(await store.read()),
+  );
+  server.registerTool(
+    "morning_tab_get_state",
+    {
+      title: "Read saved newspaper state",
+      description:
+        "Read the current newspaper without opening or rendering a new view.",
+      inputSchema: z.object({}),
+      annotations: readOnly,
+      _meta: { ui: { visibility: ["app"] } },
     },
     async () => result(await store.read()),
   );
@@ -115,13 +142,12 @@ export function createMorningTabServer({ store, html }) {
     {
       title: "Save prepared newspaper",
       description:
-        "Save a fact-checked, source-backed edition locally after reading the chosen sources. Never use for unread, invented, or all-failed source content. expectedRevision must come from the latest read_plan.",
+        "Save a fact-checked, source-backed edition locally after reading the chosen sources. Never use for unread, invented, or all-failed source content. expectedRevision must come from the latest read_plan. This is a data-only save: existing newspaper views update automatically. Do not call any open tool afterwards unless the user explicitly requests a new view.",
       inputSchema: z.object({
         edition: EditionSchema,
         expectedRevision: z.number().int().nonnegative(),
       }),
       annotations: mutating,
-      _meta: { ui: { resourceUri: APP_URI } },
     },
     async ({ edition, expectedRevision }) =>
       result(await store.publish(edition, expectedRevision)),

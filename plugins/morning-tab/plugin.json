@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "morning-tab",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "A personal newspaper inside ChatGPT and Codex, built with OpenAI MCP Extensions.",
   "author": {
     "name": "lessthanno",
@@ -10,12 +10,17 @@
   "homepage": "https://github.com/lessthanno/codex-morning-tab",
   "repository": "https://github.com/lessthanno/codex-morning-tab",
   "license": "MIT",
-  "keywords": ["codex", "new-tab", "personal-newspaper", "briefing"],
+  "keywords": [
+    "codex",
+    "new-tab",
+    "personal-newspaper",
+    "briefing"
+  ],
   "extensions": {
     "com.openai": {
       "interface": {
         "displayName": "Morning Tab",
-        "shortDescription": "Your internet, edited into a morning paper",
+        "shortDescription": "Your personal morning paper",
         "longDescription": "Open your personal newspaper from the global sidebar or beside a conversation. Configure reading sources with native plugin settings, then ask your current conversation to prepare a sourced edition. Runs as a local MCP server. No separate model API key, nested Codex process, browser extension, or background schedule. Browser-history input requires a separately available authorized browser integration.",
         "developerName": "lessthanno",
         "category": "Productivity",

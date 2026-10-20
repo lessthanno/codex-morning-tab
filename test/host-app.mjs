@@ -12,6 +12,23 @@ const call = async (name, args = {}) => {
   return r.json();
 };
 const iframe = document.getElementById("frame");
+const failFirstRead = new URLSearchParams(location.search).has("fail-first-read");
+let failedReads = failFirstRead ? 1 : 0;
+document.getElementById("interrupt").addEventListener("click", (event) => {
+  failedReads = failedReads === Infinity ? 0 : Infinity;
+  event.currentTarget.textContent = failedReads ? "Restore connection" : "Simulate read failure";
+});
+let frameLoads = 0;
+iframe.addEventListener("load", () => {
+  document.getElementById("view-count").textContent =
+    `View loads: ${++frameLoads}`;
+});
+document.getElementById("edit-example").addEventListener("click", async () => {
+  const result = await fetch("/edit-example", { method: "POST" });
+  if (result.ok)
+    document.getElementById("event").textContent =
+      "Conversation edit saved via MCP. The existing newspaper should update without opening a view.";
+});
 if (location.search.includes("narrow")) iframe.style.width = "390px";
 const bridge = new AppBridge(
   null,
@@ -19,7 +36,13 @@ const bridge = new AppBridge(
   { serverTools: {}, openLinks: {}, message: { text: {} }, logging: {} },
   { hostContext: { theme: "light", displayMode: "fullscreen" } },
 );
-bridge.oncalltool = (params) => call(params.name, params.arguments);
+bridge.oncalltool = (params) => {
+  if (params.name === "morning_tab_get_state" && failedReads > 0) {
+    failedReads--;
+    return { isError: true, content: [{ type: "text", text: "Simulated temporary connection failure" }] };
+  }
+  return call(params.name, params.arguments);
+};
 bridge.onopenlink = async ({ url }) => {
   document.getElementById("event").textContent = `Link requested: ${url}`;
   return {};
@@ -32,7 +55,7 @@ bridge.onmessage = async (params) => {
 };
 bridge.oninitialized = async () => {
   await bridge.sendToolInput({ arguments: {} });
-  await bridge.sendToolResult(await call("morning_tab_open"));
+  if (!failFirstRead) await bridge.sendToolResult(await call("morning_tab_open"));
   document.getElementById("host-status").textContent =
     "Real MCP connection active; conversation generation is simulated.";
 };

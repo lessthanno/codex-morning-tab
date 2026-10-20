@@ -55,13 +55,15 @@ const server = http.createServer(async (req, res) => {
         }
         const args = JSON.parse(body);
         if (
-          !["morning_tab_open", "morning_tab_update_preferences"].includes(
-            args.name,
-          )
+          ![
+            "morning_tab_open",
+            "morning_tab_get_state",
+            "morning_tab_update_preferences",
+          ].includes(args.name)
         )
           throw Error("Test host tool not allowed");
         result = await client.callTool(args);
-      } else if (req.url === "/publish-example") {
+      } else if (["/publish-example", "/edit-example"].includes(req.url)) {
         const current = await client.callTool({
           name: "morning_tab_read_plan",
           arguments: {},
@@ -69,7 +71,17 @@ const server = http.createServer(async (req, res) => {
         result = await client.callTool({
           name: "morning_tab_publish_edition",
           arguments: {
-            edition: demo,
+            edition: {
+              ...demo,
+              stories: demo.stories.map((story, i) =>
+                i === 0 && req.url === "/edit-example"
+                  ? {
+                      ...story,
+                      title: `Conversation edit ${current.structuredContent.revision + 1}: ${story.title}`,
+                    }
+                  : story,
+              ),
+            },
             expectedRevision: current.structuredContent.revision,
           },
         });
@@ -77,7 +89,7 @@ const server = http.createServer(async (req, res) => {
       res.setHeader("Content-Type", "application/json");
       return res.end(JSON.stringify(result));
     }
-    if (req.url === "/host.js") {
+  if (req.url === "/host.js") {
       res.setHeader("Content-Type", "text/javascript");
       return res.end(host.outputFiles[0].text);
     }
@@ -92,7 +104,7 @@ const server = http.createServer(async (req, res) => {
     }
     res.setHeader("Content-Type", "text/html");
     res.end(
-      '<!doctype html><meta charset="utf-8"><title>Morning Tab — MCP test host</title><style>body{margin:0;background:#e3e1d8;font:13px system-ui}header{padding:12px 20px;background:#fff}p{margin:4px 0}iframe{display:block;border:0;width:100%;height:calc(100vh - 110px);margin:12px auto;background:#f3f0e6}</style><header><b>MCP integration test host</b><p id="host-status">Connecting…</p><p id="event">This is a local test harness, not the ChatGPT/Codex UI.</p></header><iframe id="frame" title="Morning Tab app"></iframe><script type="module" src="/host.js"></script>',
+      '<!doctype html><meta charset="utf-8"><title>Morning Tab — MCP test host</title><style>body{margin:0;background:#e3e1d8;font:13px system-ui}header{padding:12px 20px;background:#fff}p{margin:4px 0}iframe{display:block;border:0;width:100%;height:calc(100vh - 110px);margin:12px auto;background:#f3f0e6}</style><header><b>MCP integration test host</b><p id="host-status">Connecting…</p><p id="event">This is a local test harness, not the ChatGPT/Codex UI.</p><button id="edit-example">Simulate conversation edit</button><button id="interrupt">Simulate read failure</button><span id="view-count"></span></header><iframe id="frame" title="Morning Tab app"></iframe><script type="module" src="/host.js"></script>',
     );
   } catch (e) {
     res.statusCode = 400;

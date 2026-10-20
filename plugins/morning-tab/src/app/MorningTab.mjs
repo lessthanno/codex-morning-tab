@@ -1,3 +1,4 @@
+import { createStateSync } from "./state-sync.mjs";
 import { App } from "@modelcontextprotocol/ext-apps";
 import { OpenAIExtensions } from "@openai/mcp-extensions/app";
 import { renderPaper, escapeHtml } from "../newspaper/render.mjs";
@@ -5,15 +6,15 @@ import { SettingsSchema } from "../newspaper/contracts.mjs";
 import demo from "../../../../examples/edition.json";
 import "./MorningTab.css";
 const preview = window.parent === window;
-const app = new App({ name: "morning-tab", version: "0.1.0" });
+const app = new App({ name: "morning-tab", version: "0.1.2" });
 const extensions = new OpenAIExtensions(app);
 let state = null;
 let waitingFor = null;
-let pollTimer = null;
 let pollUntil = 0;
 let connected = false;
 let inFlight = false;
 let refreshing = false;
+let noticeKind = "";
 const paper = document.getElementById("paper");
 const status = document.getElementById("status");
 const refresh = document.getElementById("refresh");
@@ -28,77 +29,115 @@ const readableError = (e) =>
     .join(" ") ||
   e.message ||
   String(e);
-function notice(text, error = false) {
+function notice(text, error = false, kind = "general") {
+  noticeKind = text ? kind : "";
   status.textContent = text;
   status.classList.toggle("error", error);
 }
+const waitingNotice = () =>
+  zh()
+    ? "已请求当前对话更新。整理完成后会显示在这里，上一版仍可阅读。"
+    : "Refresh requested in this conversation. Your previous edition remains readable while it is prepared.";
+function expireRefresh() {
+  if (!waitingFor || Date.now() <= pollUntil) return false;
+  waitingFor = null;
+  refresh.disabled = !connected;
+  notice(
+    zh()
+      ? "暂未收到新版本，请查看当前对话中的进度或错误。"
+      : "No new edition received yet. Check this conversation for progress or errors.",
+  );
+  return true;
+}
 function render(next) {
   if (!next?.settings) return;
+  const changed =
+    !state ||
+    state.revision !== next.revision ||
+    state.edition?.id !== next.edition?.id;
   state = next;
-  paper.innerHTML = renderPaper(state, { preview });
+  if (changed) {
+    // Preserve the current reading view; unchanged polls must not replace its DOM or reset selection.
+    paper.innerHTML = renderPaper(state, { preview });
+    if (connected)
+      void app
+        .updateModelContext({
+          structuredContent: {
+            app: "morning-tab",
+            view: "newspaper",
+            revision: state.revision,
+            editionId: state.edition?.id ?? null,
+            displayPolicy:
+              "Update this existing newspaper view in place. Do not call an open tool after a normal edit or refresh.",
+          },
+        })
+        .catch(() => {});
+  }
   refresh.textContent = zh() ? "更新晨报" : "Update newspaper";
   preferences.textContent = zh() ? "阅读偏好" : "Preferences";
   document.documentElement.lang = state.settings.language;
-  if (waitingFor && state.edition?.id !== waitingFor) {
+  if (
+    waitingFor &&
+    state.edition &&
+    state.edition.id !== waitingFor.editionId
+  ) {
     waitingFor = null;
-    stopPolling();
     notice(zh() ? "新一期晨报已准备好。" : "Your new edition is ready.");
     refresh.disabled = !connected;
   }
 }
-function stopPolling() {
-  clearTimeout(pollTimer);
-  pollTimer = null;
-}
 async function readState() {
-  const result = await app.callServerTool({
-    name: "morning_tab_open",
-    arguments: {},
-  });
+  const result = await app.callServerTool(
+    { name: "morning_tab_get_state", arguments: {} },
+    { timeout: 15_000 },
+  );
   if (result.isError)
     throw Error(
       result.content?.find((c) => c.type === "text")?.text ||
         "Unable to read the newspaper.",
     );
+  if (!result.structuredContent?.settings)
+    throw Error("The host returned an incomplete newspaper state.");
   return result.structuredContent;
 }
-async function poll() {
-  if (!waitingFor) return;
-  if (Date.now() > pollUntil) {
-    stopPolling();
-    waitingFor = null;
-    refresh.disabled = false;
+const stateSync = createStateSync({
+  readState,
+  isVisible: () => !document.hidden,
+  onState(next) {
+    render(next);
+    if (expireRefresh()) return;
+    if (noticeKind === "connection")
+      notice(waitingFor ? waitingNotice() : "");
+  },
+  onError() {
+    if (expireRefresh()) return;
     notice(
-      zh()
-        ? "暂未收到新版本，请查看对话中的进度或错误。"
-        : "No new edition received yet. Check the conversation for progress or errors.",
-    );
-    return;
-  }
-  try {
-    render(await readState());
-  } catch {
-    notice(
-      zh()
-        ? "连接暂时中断，保留上一版晨报。"
-        : "Connection interrupted. Your previous edition is kept.",
+      state?.edition
+        ? zh()
+          ? "连接暂时中断，正在自动重试；上一版晨报已保留。"
+          : "Connection interrupted. Retrying automatically; your previous edition is kept."
+        : zh()
+          ? "暂时无法加载晨报，正在自动重试。"
+          : "Unable to load the newspaper yet. Retrying automatically.",
       true,
+      "connection",
     );
-  }
-  if (waitingFor) pollTimer = setTimeout(poll, 4000);
-}
+  },
+});
+const onVisibility = () => stateSync.request();
+document.addEventListener("visibilitychange", onVisibility);
 refresh.addEventListener("click", async () => {
   if (!connected || refreshing) return;
   refreshing = true;
   refresh.disabled = true;
-  const previousId = state?.edition?.id || "first-edition";
+  const previousId = state?.edition?.id ?? null;
   try {
     const message = {
       role: "user",
       content: [
         {
           type: "text",
-          text: "Use the Morning Tab plugin to prepare a fresh personal newspaper. Read morning_tab_read_plan, use my configured sources and exclusions, read the public pages with available web tools, and save a source-backed edition with morning_tab_publish_edition using the current revision. Keep the old edition if reads fail. Do not access private browser history or signed-in private content without my separate authorization.",
+          text: "Use the Morning Tab plugin to prepare a fresh personal newspaper. Read morning_tab_read_plan, use my configured sources and exclusions, read the public pages with available web tools, and save a source-backed edition with morning_tab_publish_edition using the current revision. Update the existing newspaper view in place. Do not call morning_tab_open or morning_tab_open_panel after saving, do not open a browser preview, and do not create another chat or panel. Keep the old edition if reads fail. Do not access private browser history or signed-in private content without my separate authorization.",
         },
       ],
     };
@@ -115,15 +154,10 @@ refresh.addEventListener("click", async () => {
       refresh.disabled = false;
       return;
     }
-    waitingFor = previousId;
+    waitingFor = { editionId: previousId };
     pollUntil = Date.now() + 10 * 60_000;
-    notice(
-      zh()
-        ? "已请求当前对话更新。整理完成后会显示在这里，上一版仍可阅读。"
-        : "Refresh requested in this conversation. Your previous edition remains readable while it is prepared.",
-    );
-    stopPolling();
-    pollTimer = setTimeout(poll, 4000);
+    notice(waitingNotice());
+    stateSync.request();
   } catch (e) {
     notice(
       `${zh() ? "无法发起更新，请在当前对话输入“更新我的晨报”。" : "Could not start a refresh. Ask this conversation to update your Morning Tab."} ${e.message}`,
@@ -220,7 +254,8 @@ app.ontoolresult = (result) => {
     render(result.structuredContent);
 };
 app.onteardown = async () => {
-  stopPolling();
+  stateSync.stop();
+  document.removeEventListener("visibilitychange", onVisibility);
   return {};
 };
 if (preview) {
@@ -243,7 +278,9 @@ if (preview) {
     await app.connect();
     connected = true;
     refresh.disabled = false;
-    if (!state) render(await readState());
+    // The first read needs the same retry path as later polls. A transient
+    // server failure must not permanently disable this already-connected view.
+    stateSync.start();
     notice("");
   } catch (e) {
     paper.innerHTML =
